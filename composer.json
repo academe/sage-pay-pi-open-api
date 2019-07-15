@@ -1,0 +1,35 @@
+{
+    "name": "academe/sage-pay-pi-open-api",
+    "description": "Snapshot of Sage Pay Pi OpenAPI description files, until they are officially released in a usable form",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Jason Judge",
+            "email": "jason.judge@consil.co.uk"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {},
+    "repositories" : [
+        {
+            "type": "vcs",
+            "url": "git@github.com:consilience/openapi-generator-psr18.git"
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "xeroapi/xero-openapi",
+                "version": "dev-master",
+                "source": {
+                    "url": "https://github.com/XeroAPI/Xero-OpenAPI.git",
+                    "type": "git",
+                    "reference": "origin/master"
+                }
+            }
+        }
+    ],
+    "require-dev": {
+        "consilience/openapi-generator-psr18": "dev-master",
+        "xeroapi/xero-openapi": "dev-master"
+    }
+}

@@ -3,7 +3,7 @@ openapi: 3.0.0
 info:
   version: 1.0.0
   title: sagePay API Documentation
-  description:
+  description: |
     $ref: 'description.md'
 tags:
   - $ref: 'merchant-session-keys.yaml#/tags/tag'
@@ -12,22 +12,22 @@ tags:
   - $ref: '3DSecure.yaml#/tags/tag'
   - $ref: 'instructions.yaml#/tags/tag'
   - name: Sandbox Accounts
-    description:
+    description: |
       $ref: sandbox-accounts.md
   - name: Test Card Details
-    description:
+    description: |
       $ref: test-card-details.md
   - name: Postman
-    description:
+    description: |
       $ref: postman.md
   - name: Drop-in checkout reference
-    description:
+    description: |
       $ref: checkout-reference.md
   - name: Drop-in error handling
-    description:
+    description: |
       $ref: error-handling.md
   - name: API Changelog
-    description:
+    description: |
       $ref: api-changelog.md
 
 x-tagGroups:
