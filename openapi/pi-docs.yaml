@@ -1,0 +1,110 @@
+openapi: 3.0.0
+
+info:
+  version: 1.0.0
+  title: sagePay API Documentation
+  description:
+    $ref: 'description.md'
+tags:
+  - $ref: 'merchant-session-keys.yaml#/tags/tag'
+  - $ref: 'card-identifiers.yaml#/tags/tag'
+  - $ref: 'transactions.yaml#/tags/tag'
+  - $ref: '3DSecure.yaml#/tags/tag'
+  - $ref: 'instructions.yaml#/tags/tag'
+  - name: Sandbox Accounts
+    description:
+      $ref: sandbox-accounts.md
+  - name: Test Card Details
+    description:
+      $ref: test-card-details.md
+  - name: Postman
+    description:
+      $ref: postman.md
+  - name: Drop-in checkout reference
+    description:
+      $ref: checkout-reference.md
+  - name: Drop-in error handling
+    description:
+      $ref: error-handling.md
+  - name: API Changelog
+    description:
+      $ref: api-changelog.md
+
+x-tagGroups:
+  - name: Resources
+    tags:
+      - Merchant Session Keys
+      - Card Identifiers
+      - Transactions
+      - 3-D Secure
+      - Instructions
+  - name: Testing
+    tags:
+      - Sandbox Accounts
+      - Test Card Details
+      - Postman
+  - name: Checkout
+    tags:
+      - Drop-in checkout reference
+      - Drop-in error handling
+  - name: Changelog
+    tags:
+      - API Changelog
+
+servers:
+  - url: https://pi-test.sagepay.com/api/v1
+    description: Sandbox server (uses test data, not connected to banks)
+  - url: https://pi-live.sagepay.com/api/v1
+    description: Production server (uses live data)
+
+components:
+  securitySchemes:
+    'Basic-Authentication':
+      type: http
+      scheme: basic
+    'Bearer-Authentication':
+      type: http
+      scheme: bearer
+
+definitions:
+  foo:
+    type: object
+    properties:
+      merchantSessionKey:
+        type: string
+        description: Unique key that identifies the merchant to the REST API.
+        example: M1E996F5-A9BC-41FE-B088-E5B73DB94277
+    required:
+      - merchantSessionKey
+
+security:
+  - 'Basic-Authentication': [integrationKey:integrationPassword]
+
+paths:
+  /merchant-session-keys:
+    $ref: 'merchant-session-keys.yaml#/paths/create'
+
+  /merchant-session-keys/{merchantSessionKey}:
+    $ref: 'merchant-session-keys.yaml#/paths/retrieve'
+
+  /card-dentifiers:
+    $ref: 'card-identifiers.yaml#/paths/create'
+
+  /card-dentifiers/{cardIdentifier}/security-code:
+    $ref: 'card-identifiers.yaml#/paths/link'
+
+  /transactions:
+    $ref: 'transactions.yaml#/paths/create'
+
+  /transactions/{transactionId}:
+    $ref: 'transactions.yaml#/paths/retrieve'
+
+  /transactions/{transactionId}/3d-secure:
+    $ref: '3DSecure.yaml#/paths/create'
+
+  /transactions/{transactionId}/instructions:
+    $ref: 'instructions.yaml#/paths/instructions'
+
+externalDocs:
+  description: Sign Up for a Sage Pay account
+  url: https://applications.sagepay.com/apply

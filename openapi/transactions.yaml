@@ -1,0 +1,522 @@
+tags:
+  tag:
+    name: Transactions
+    description: |
+      The transactions endpoint allows you to submit transactions to the Sage Pay gateway.
+
+      Providing a transaction request is valid, the response may differ depending on the transaction type and the [3-D Secure authentication](#tag/3-D-Secure) requirements for the transaction.
+
+      ## Transactions without 3-D secure
+      When 3-D Secure authentication is not required (or is not possible), you will receive a response with HTTP/1.1 201 Created and the transaction object in the body in plain JSON. The transaction object will provide you with the result of the transaction registration via the `status` parameter.
+
+      ## Transactions with 3-D secure
+      When 3-D Secure authentication is required you will receive a response with HTTP/1.1 202 Accepted but you will not receive the transaction object in the body. Instead you will receive a set of values in plain JSON that are needed in order to complete the 3-D Secure authentication. You will then need to redirect your customer to the `acsUrl` where they have to complete the 3-D Secure authentication. For a detailed summary of the 3-D Secure authentication process please check our [3-D Secure implementation guide.](/payments/additional-integrations/3-D-secure/)
+
+      #### Authentication: You will need to authenticate your call to the transactions endpoint using [HTTP Basic Authentication](#section/Authentication).
+
+      Sage Pay offers you a wide variety of transaction types that you can process through your account with us.
+
+      The Sage Pay REST API currently supports the following transaction types:
+
+      ### Transaction
+
+      |type     | description |
+      |---------|-------------|
+      |Payment  | Payment is the most common transaction type that is processed through our systems. This is when a customer enters their payment details in order to purchase goods or services. |
+      |Deferred | In some cases you may not wish to take the funds from the card immediately, merely place a ‘shadow’ on the customer’s card to ensure they cannot subsequently spend those funds elsewhere. Use the ‘Release’ instruction when you are ready to ship the goods. |
+      |Repeat   | The repeat payment allows you to process another payment whilst using the customer and card details that were captured in a previous transaction. |
+      |Refund   | A refund allows you to credit the funds that have already been taken for a transaction back to your customer. You are able to perform partial or full refunds up to the amount of the original transaction, including surcharge (if applied). |
+
+      #### We may archive transactions that are over 2 years old. We therefore recommend that you check the date of the `Payment` transaction if you have issues performing a secondary transaction such as `Repeat` or `Refund`. If you are performing repeats we recommend that you repeat against the last successful authorised transaction.
+
+
+paths:
+  create:
+    post:
+      tags:
+        - Transactions
+      summary: Create a Transaction
+      description: |
+        There are three different request objects that can be sent, depending on the transaction type:
+
+        ### Payment / Deferred transactions
+        Payment and Deferred transactions use exactly the same fields.
+
+        ### Repeat Transactions
+
+        ### Refunds
+      operationId: createTransaction
+      requestBody:
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  description: Payment / Deferred properties
+                  properties:
+                    transactionType:
+                      description: The type of the transaction
+                      type: string
+                      example: Payment
+                      enum:
+                        - Payment
+                        - Deferred
+                    paymentMethod:
+                      $ref: 'components.yaml#/components/schemas/PaymentMethodObject'
+                    vendorTxCode:
+                      type: string
+                      description: Your unique reference for this transaction.
+                      maxLength: 40
+                      example: demotransaction-<unique-suffix>
+                    amount:
+                      type: integer
+                      description: The amount charged to the customer in the smallest currency unit. (e.g 100 pence to charge £1.00, or 1 to charge ¥1 (0-decimal currency).
+                      example: 1000
+                    currency:
+                      type: string
+                      maxLength: 3
+                      minLength: 3
+                      description: The currency of the amount in 3 letter [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217) format.
+                      example: GBP
+                    description:
+                      type: string
+                      description: A brief description of the goods or services purchased.
+                      example: Demo Payment
+                    customerFirstName:
+                      type: string
+                      description: Customer’s first names.
+                      example: Sam
+                    customerLastName:
+                      type: string
+                      description: Customer’s last name.
+                      example: Jones
+                    billingAddress:
+                      $ref: 'components.yaml#/components/schemas/BillingAddress'
+                    entryMethod:
+                      type: string
+                      description: The method used to capture card data.
+                      enum:
+                        - Ecommerce
+                        - MailOrder
+                        - TelephoneOrder
+                      default: Ecommerce
+                    giftAid:
+                      type: boolean
+                      description: Identifies the customer has ticked a box to indicate that they wish to receive tax back on their donation.
+                      default: false
+                    apply3DSecure:
+                      type: string
+                      enum:
+                        - UseMSPSetting
+                        - Force
+                        - Disable
+                        - ForceIgnoringRules
+                      default: UseMSPSetting
+                      description: >
+                        Use this field to override your default account level 3-D Secure settings
+                         * `UseMSPSetting` - Use default MySagePay settings.
+                         * `Force` - Apply authentication even if turned off.
+                         * `Disable` - Disable authentication and rules.
+                         * `ForceIgnoringRules` - Apply authentication but ignore rules.
+                    applyAvsCvcCheck:
+                      type: string
+                      enum:
+                        - UseMSPSetting
+                        - Force
+                        - Disable
+                        - ForceIgnoringRules
+                      description: >
+                        Use this field to override your default account level AVS CVC settings.
+                         * `UseMSPSetting` - Use default MySagePay settings.
+                         * `Force` - Apply authentication even if turned off.
+                         * `Disable` - Disable authentication and rules.
+                         * `ForceIgnoringRules` - Apply authentication but ignore rules.
+                    customerEmail:
+                      type: string
+                      description: Customer’s email address.
+                      example: sam.jones@example.com
+                    customerPhone:
+                      type: string
+                      description: Customer’s phone number.
+                      example: 03069 990210
+                    shippingDetails:
+                      default: Defaults to billingAddress object property values if not supplied.
+                      $ref: 'components.yaml#/components/schemas/ShippingDetails'
+                    referrerId:
+                      type: string
+                      description: This can be used to send the unique reference for the partner that referred the merchant to Sage Pay.
+                      maxLength: 40
+                      example: f9979593-a390-4069-b126-7914783fc039
+                  required:
+                    - transactionType
+                    - paymentMethod
+                    - vendorTxCode
+                    - amount
+                    - currency
+                    - description
+                    - customerFirstName
+                    - customerLastName
+                    - billingAddress
+                - type: object
+                  description: Repeat properties
+                  properties:
+                    transactionType:
+                      description: The type of the transaction
+                      type: string
+                      example: Payment
+                      enum:
+                        - Repeat
+                    referenceTransactionId:
+                      type: string
+                      description: The `transactionId` of the referenced transaction.
+                      example: 6a57c703-72bf-429e-96ed-c1db37bc76e0
+                    vendorTxCode:
+                      type: string
+                      description: Your unique reference for this transaction.
+                      maxLength: 40
+                      example: demotransaction-<unique-suffix>
+                    amount:
+                      type: integer
+                      description: The amount charged to the customer in the smallest currency unit. (e.g 100 pence to charge £1.00, or 1 to charge ¥1 (0-decimal currency).
+                      example: 567
+                    currency:
+                      type: string
+                      maxLength: 3
+                      minLength: 3
+                      description: The currency of the amount in 3 letter [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217) format.
+                      example: GBP
+                    description:
+                      type: string
+                      description: A brief description of the goods or services purchased.
+                      example: Demo Payment
+                    shippingDetails:
+                      $ref: 'components.yaml#/components/schemas/ShippingDetails'
+                    giftAid:
+                      type: boolean
+                      description: Identifies the customer has ticked a box to indicate that they wish to receive tax back on their donation.
+                      default: false
+                  required:
+                    - transactionType
+                    - referenceTransactionId
+                    - vendorTxCode
+                    - amount
+                    - currency
+                    - description
+                - type: object
+                  description: Refund properties
+                  properties:
+                    transactionType:
+                      description: The type of the transaction
+                      type: string
+                      example: Payment
+                      enum:
+                        - Refund
+                    referenceTransactionId:
+                      type: string
+                      description: The `transactionId` of the referenced transaction.
+                      example: 6a57c703-72bf-429e-96ed-c1db37bc76e0
+                    vendorTxCode:
+                      type: string
+                      description: Your unique reference for this transaction.
+                      maxLength: 40
+                      example: demotransaction99
+                    amount:
+                      type: integer
+                      description: The amount refunded to the customer in the smallest currency unit. (e.g 100 pence to refund £1.00, or 1 to refund ¥1 (0-decimal currency).
+                      example: 4
+                    description:
+                      type: string
+                      description: A brief description of the reson for the refund
+                      example: Demo Refund
+                  required:
+                    - transactionType
+                    - referenceTransactionId
+                    - vendorTxCode
+                    - amount
+                    - description
+      responses:
+        '202':
+          description: 3-D secure authentication must be completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: string
+                    description: |
+                      Code related to the `status` of the transaction.
+                      *You can lookup any status code on our [website](https://www.sagepay.co.uk/support/error-codes).*
+                    example: 2007
+                  statusDetail:
+                    type: string
+                    description: A detailed reason for the `status` of the transaction.
+                    example: Please redirect your customer to the ACSURL to complete the 3DS Transaction
+                  transactionId:
+                    type: string
+                    description: Sage Pay’s unique reference for this transaction.
+                    example: DB79BA2D-05DA-5B85-D188-1293D16BBAC7
+                  acsUrl:
+                    type: string
+                    description: A fully qualified URL that points to the 3-D Secure authentication system at the card holder’s issuing bank
+                    example: https://test.sagepay.com/mpitools/accesscontroler?action=pareq
+                  paReq:
+                    type: string
+                    description: A Base64 encoded, encrypted message that contains the transaction details. This needs to be passed to the issuing bank as part of the 3-D Secure authentication
+                    example: eJxVUstuwjAQvPcrolwrxXaeCC1GtBwaJEpUqlbqzXKsEkQeOElD/r7rkBTq087serw7a1he8pP1o3SdlcXCZg61l/wB3g9aqfVeyVYrDltV1+JbWVm6sF3KfD8MIopBFPrMC5lvc0hWb+rMYRTiqOMwIBNEBS0Pomg4CHl+il+5T2eB5wIZIeRKx2se+NT3woBdD6avNBQiV9y0UIk+VXkJZGBAlm3R6J7P3BDIBKDVJ35ommpOSNd1znjPkWUOxOSA3NpJWhPVqHXJUt7JD/+4kY+7NZOfdbQ76qSPN5vTV7FdADEVkIpGcZwdm6SexaI59eYujjrwIHLTBGeUUpztCqAyb6zuM/cMoMdaFXKaYkKgLlVZKKxAH/5iSFUt+d5sIxG9tU1ifNpQQG6jPL8Yn2WD1jFj8RAZvQztwd7ZIGgAEFNLxu2RcdEY/fsAv12RstM=
+                  status:
+                    type: string
+                    example: 3DAuth
+        '201':
+          description: A new `transaction` has been created where 3-D Secure is not required or possible
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactionId:
+                    type: string
+                    description: Sage Pay’s unique reference for this transaction.
+                    example: DB79BA2D-05DA-5B85-D188-1293D16BBAC7
+                  transactionType:
+                    type: string
+                    description: The type of the transaction
+                    enum:
+                      - Payment
+                      - Deferred
+                      - Repeat
+                      - Refund
+                  status:
+                    type: string
+                    enum:
+                      - Ok
+                      - NotAuthed
+                      - Rejected
+                      - Malformed
+                      - Invalid
+                      - Error
+                    description: >
+                      Result of transaction registration.
+                       * `Ok Transaction` - request completed successfully.
+                       * `NotAuthed` - Transaction request was not authorised by the bank.
+                       * `Rejected` - Transaction rejected by your fraud rules.
+                       * `Malformed` - Missing properties or badly formed body.
+                       * `Invalid` - Invalid property values supplied.
+                       * `Error` - An error occurred at Sage Pay.
+                  statusCode:
+                    type: string
+                    description: |
+                      Code related to the `status` of the transaction.
+                      *Successfully authorised transactions will have the `statusCode` of `0000`. You can lookup any other status code on our [website](https://www.sagepay.co.uk/support/error-codes).*
+                    example: 0000
+                  statusDetail:
+                    type: string
+                    description: A detailed reason for the `status` of the transaction.
+                    example: The Authorisation was Successful.
+                  retrievalReference:
+                    type: string
+                    description: Sage Pay unique Authorisation Code for a successfully authorised transaction. Only present if `status` is `Ok`.
+                    example: 9493946
+                  bankResponseCode:
+                    type: string
+                    description: |
+                      Also known as the decline code, these are codes that are specific to your merchant bank. Please contact them for a description of each code.
+                      *This is only returned for transaction type `Payment`*
+                    example: 00
+                  bankAuthorisationCode:
+                    type: string
+                    description: The authorisation code returned from your merchant bank.
+                    example: 999777
+                  avsCvsCheck:
+                    description: Provides information regarding the AVS/CV2 check results.
+                      *This is only returned for Payment and Deferred* transactions.
+                    $ref: 'components.yaml#/components/schemas/AvsCvsCheck'
+                  paymentMethod:
+                    description: Provides information regarding the payment method.
+                    $ref: 'components.yaml#/components/schemas/PaymentMethodObject'
+                  amount:
+                    type: integer
+                    description: The amount charged to the customer in the smallest currency unit. (e.g 100 pence to charge £1.00, or 1 to charge ¥1 (0-decimal currency).
+                    example: 567
+                  currency:
+                    type: string
+                    maxLength: 3
+                    minLength: 3
+                    description: The currency of the amount in 3 letter [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217) format.
+                    example: GBP
+                  3DSecure:
+                    description: Provides the 3-D Secure status of the transaction, if applied.
+                    $ref: 'components.yaml#/components/schemas/3DSecureObject'
+      x-code-samples:
+        - lang: 'cURL'
+          source: |
+            curl https://pi-test.sagepay.com/api/v1/transactions \
+            -H "Authorization: Basic aEpZeHN3N0hMYmo0MGNCOHVkRVM4Q0RSRkxodUo4RzU0TzZyRHBVWHZFNmhZRHJyaWE6bzJpSFNyRnliWU1acG1XT1FNdWhzWFA1MlY0ZkJ0cHVTRHNocktEU1dzQlkxT2lONmh3ZDlLYjEyejRqNVVzNXU="  \
+            -H "Content-type: application/json" \
+            -X POST \
+            -d '{
+                "transactionType": "Payment",
+                "paymentMethod": {
+                    "card": {
+                        "merchantSessionKey": "<merchant-session-key>",
+                        "cardIdentifier": "<card-identifier>",
+                        "save": false
+                    }
+                },
+                "vendorTxCode": "demotransaction-<unique-suffix>",
+                "amount": 10000,
+                "currency": "GBP",
+                "description": "Demo Payment",
+                "apply3DSecure": "UseMSPSetting",
+                "customerFirstName": "Sam",
+                "customerLastName": "Jones",
+                "billingAddress": {
+                    "address1": "407 St. John Street",
+                    "city": "London",
+                    "postalCode": "EC1V 4AB",
+                    "country": "GB"
+                },
+                "entryMethod": "Ecommerce"
+            }'
+        - lang: 'cURL'
+          source: |
+            curl https://pi-test.sagepay.com/api/v1/transactions \
+            -H "Authorization: Basic aEpZeHN3N0hMYmo0MGNCOHVkRVM4Q0RSRkxodUo4RzU0TzZyRHBVWHZFNmhZRHJyaWE6bzJpSFNyRnliWU1acG1XT1FNdWhzWFA1MlY0ZkJ0cHVTRHNocktEU1dzQlkxT2lONmh3ZDlLYjEyejRqNVVzNXU="  \
+            -H "Content-type: application/json" \
+            -X POST \
+            -d '{
+                    "transactionType": "Repeat",
+                    "referenceTransactionId":"6FEA2619-2B60-75F0-AF78-4960EDFCB0A1",
+                    "vendorTxCode": "repeattransaction",
+                    "amount": 10000,
+                    "currency": "GBP",
+                    "description": "Demo transaction",
+                    "giftAid": true,
+                    "shippingDetails": {
+                        "recipientFirstName": "Sam",
+                        "recipientLastName": "Jones",
+                        "shippingAddress1": "407",
+                        "shippingAddress2": "St. John Street",
+                        "shippingCity": "London",
+                        "shippingPostalCode": "EC1V 4AB",
+                        "shippingCountry": "US",
+                        "shippingState": "FL"
+                    }
+                }'
+        - lang: 'cURL'
+          source: |
+            curl https://pi-test.sagepay.com/api/v1/transactions \
+            -H "Authorization: Basic aEpZeHN3N0hMYmo0MGNCOHVkRVM4Q0RSRkxodUo4RzU0TzZyRHBVWHZFNmhZRHJyaWE6bzJpSFNyRnliWU1acG1XT1FNdWhzWFA1MlY0ZkJ0cHVTRHNocktEU1dzQlkxT2lONmh3ZDlLYjEyejRqNVVzNXU="  \
+            -H "Content-type: application/json" \
+            -X POST \
+            -d '{
+                    "transactionType": "Refund",
+                    "referenceTransactionId": "56A59178-EA46-5731-BBAF-B08415CCE499",
+                    "vendorTxCode": "demotransaction99",
+                    "amount": 4,
+                    "description": "Demo transaction"
+                }'
+  retrieve:
+    get:
+      tags:
+        - Transactions
+      summary: Retrieve a Transaction
+      description: Supply a valid `transactionId` and we will provide you with the transaction object.
+      operationId: retrieveTransaction
+      parameters:
+        - in: path
+          name: transactionId
+          required: true
+          schema:
+            type: string
+            description: Sage Pay’s unique reference for this transaction.
+      responses:
+        '200':
+          description: The `transaction` was retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactionId:
+                    type: string
+                    description: Sage Pay’s unique reference for this transaction.
+                    example: DB79BA2D-05DA-5B85-D188-1293D16BBAC7
+                  transactionType:
+                    type: string
+                    description: The type of the transaction
+                    enum:
+                      - Payment
+                      - Deferred
+                      - Repeat
+                      - Refund
+                  status:
+                    type: string
+                    enum:
+                      - Ok
+                      - NotAuthed
+                      - Rejected
+                      - Malformed
+                      - Invalid
+                      - Error
+                    description: >
+                      Result of transaction registration.
+                       * `Ok Transaction` - request completed successfully.
+                       * `NotAuthed` - Transaction request was not authorised by the bank.
+                       * `Rejected` - Transaction rejected by your fraud rules.
+                       * `Malformed` - Missing properties or badly formed body.
+                       * `Invalid` - Invalid property values supplied.
+                       * `Error` - An error occurred at Sage Pay.
+                  statusCode:
+                    type: string
+                    description: |
+                      Code related to the `status` of the transaction.
+                      *Successfully authorised transactions will have the `statusCode` of `0000`. You can lookup any other status code on our [website](https://www.sagepay.co.uk/support/error-codes).*
+                    example: 0000
+                  statusDetail:
+                    type: string
+                    description: A detailed reason for the `status` of the transaction.
+                    example: The Authorisation was Successful.
+                  retrievalReference:
+                    type: string
+                    description: Sage Pay unique Authorisation Code for a successfully authorised transaction. Only present if `status` is `Ok`.
+                    example: 9493946
+                  bankResponseCode:
+                    type: string
+                    description: |
+                      Also known as the decline code, these are codes that are specific to your merchant bank. Please contact them for a description of each code.
+                      *This is only returned for transaction type `Payment`*
+                    example: 00
+                  bankAuthorisationCode:
+                    type: string
+                    description: The authorisation code returned from your merchant bank.
+                    example: 999777
+                  amount:
+                    description: Provides information regarding the transaction amount.
+                      *This is only returned in GET requests*
+                    $ref: 'components.yaml#/components/schemas/AmountObject'
+                  avsCvsCheck:
+                    description: Provides information regarding the AVS/CV2 check results.
+                      *This is only returned for Payment and Deferred* transactions.
+                    $ref: 'components.yaml#/components/schemas/AvsCvsCheck'
+                  currency:
+                    type: string
+                    minLength: 3
+                    maxLength: 3
+                    description: The currency of the `amount` in 3 letter [ISO 4217 format](http://en.wikipedia.org/wiki/ISO_4217).
+                      *This is only returned in GET requests*
+                    example: GBP
+                  paymentMethod:
+                    description: Provides information regarding the payment method.
+                    $ref: 'components.yaml#/components/schemas/PaymentMethodObject'
+                  3DSecure:
+                    description: Provides the 3-D Secure status of the transaction, if applied.
+                    $ref: 'components.yaml#/components/schemas/3DSecureObject'
+      x-code-samples:
+        - lang: 'cURL'
+          source: |
+            curl https://pi-test.sagepay.com/api/v1/transactions/<transactionId> \
+            -H "Authorization: Basic aEpZeHN3N0hMYmo0MGNCOHVkRVM4Q0RSRkxodUo4RzU0TzZyRHBVWHZFNmhZRHJyaWE6bzJpSFNyRnliWU1acG1XT1FNdWhzWFA1MlY0ZkJ0cHVTRHNocktEU1dzQlkxT2lONmh3ZDlLYjEyejRqNVVzNXU="  \
+            -H "Content-type: application/json" \
+            -X GET

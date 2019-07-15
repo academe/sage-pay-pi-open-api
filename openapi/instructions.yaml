@@ -1,0 +1,134 @@
+tags:
+  tag:
+    name: Instructions
+    description: |
+      In certain cases you might want to provide us with specific instructions for particular transactions.
+
+      #### The void instruction type allows you to void a successful transaction up until midnight on the day it is processed. Voiding will cancel the payment and prevent funds being transferred from the customer account. Voids are non-reversible.
+
+      If you are unable to fulfil the order, the `abort` instruction type allows you to abort a deferred transaction and the customer will never be charged.
+
+      Deferred transactions are not sent to the bank for completion until you Release them using the `release` instruction. You can release only once and only for an amount up to and including the amount of the original Deferred transaction.​​​
+
+paths:
+  instructions:
+    post:
+      tags:
+        - Instructions
+      summary: Create an Instruction
+      description: |
+        When you create an instruction you need to specify the instruction type you want to apply. E.g. to void a transaction you need to specify the `instructionType` as `void`.
+
+        #### You will need to authenticate your call to the instructions endpoint using [HTTP Basic Authentication](#section/Authentication).
+      operationId: createInstruction
+      parameters:
+        - in: path
+          name: transactionId
+          required: true
+          schema:
+            type: string
+            description: Sage Pay’s unique reference for this transaction.
+      requestBody:
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                instructionType:
+                  type: string
+                  description: The type of the instruction.
+                  enum:
+                    - void
+                    - abort
+                    - release
+                amount:
+                  type: integer
+                  description: The amount property is compulsory for a 'release’ instruction after a 'Deferred’ transaction. The amount charged to the customer in the smallest currency unit. (e.g 100 pence to charge £1.00, or 1 to charge ¥1 (0-decimal currency).
+                  example: 100
+              required:
+                - instructionType
+      responses:
+        '201':
+          description: A new `instruction` object has been created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  instructionType:
+                    type: string
+                    description: The type of the instruction.
+                    enum:
+                      - void
+                      - abort
+                      - release
+                  date:
+                    type: string
+                    description: Date/Time field is in [ISO 8601](http://en.wikipedia.org/wiki/ISO_8601#Combined_date_and_time_representations) format.
+                    example: 2018-31-05T10:30
+      x-code-samples:
+        - lang: 'cURL'
+          source: |
+            curl https://pi-test.sagepay.com/api/v1/transactions/<transactionId>/instructions \
+            -H "Authorization: Basic aEpZeHN3N0hMYmo0MGNCOHVkRVM4Q0RSRkxodUo4RzU0TzZyRHBVWHZFNmhZRHJyaWE6bzJpSFNyRnliWU1acG1XT1FNdWhzWFA1MlY0ZkJ0cHVTRHNocktEU1dzQlkxT2lONmh3ZDlLYjEyejRqNVVzNXU="  \
+            -H "Content-type: application/json" \
+            -X POST \
+            -d '{
+                "instructionType": "void"
+            }'
+        - lang: 'cURL'
+          source: |
+            curl https://pi-test.sagepay.com/api/v1/transactions/<transactionId>/instructions \
+            -H "Authorization: Basic aEpZeHN3N0hMYmo0MGNCOHVkRVM4Q0RSRkxodUo4RzU0TzZyRHBVWHZFNmhZRHJyaWE6bzJpSFNyRnliWU1acG1XT1FNdWhzWFA1MlY0ZkJ0cHVTRHNocktEU1dzQlkxT2lONmh3ZDlLYjEyejRqNVVzNXU="  \
+            -H "Content-type: application/json" \
+            -X POST \
+            -d '{
+                "instructionType": "release",
+                "amount": 10000
+            }'
+    get:
+      tags:
+        - Instructions
+      summary: Retrieve an Instruction
+      description: |
+        If you want to retrieve a list of instructions for a particular transaction, you need to supply a valid `transactionId` and we will provide you with a list of instruction objects.
+      operationId: retrieveInstruction
+      parameters:
+        - in: path
+          name: transactionId
+          required: true
+          schema:
+            type: string
+            description: Sage Pay’s unique reference for this transaction.
+      responses:
+        '200':
+          description: The `instruction` object was successfully retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  instructions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        instructionType:
+                          type: string
+                          description: The type of the instruction.
+                          enum:
+                            - void
+                            - abort
+                            - release
+                        date:
+                          type: string
+                          description: Date/Time field is in [ISO 8601](http://en.wikipedia.org/wiki/ISO_8601#Combined_date_and_time_representations) format.
+                          example: 2018-31-05T10:30
+      x-code-samples:
+        - lang: 'cURL'
+          source: |
+            curl https://pi-test.sagepay.com/api/v1/transactions/<transactionId>/instructions \
+            -H "Authorization: Basic aEpZeHN3N0hMYmo0MGNCOHVkRVM4Q0RSRkxodUo4RzU0TzZyRHBVWHZFNmhZRHJyaWE6bzJpSFNyRnliWU1acG1XT1FNdWhzWFA1MlY0ZkJ0cHVTRHNocktEU1dzQlkxT2lONmh3ZDlLYjEyejRqNVVzNXU="  \
+            -H "Content-type: application/json" \
+            -X GET

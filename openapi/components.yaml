@@ -1,0 +1,209 @@
+components:
+  schemas:
+    MerchantSessionKeys:
+      type: object
+      properties:
+        merchantSessionKey:
+          type: string
+          example: M1E996F5-A9BC-41FE-B088-E5B73DB94277
+        expiry:
+          type: string
+          description: Date/Time in [ISO 8601](http://en.wikipedia.org/wiki/ISO_8601#Combined_date_and_time_representations) format
+          example: 2015-08-11T11:45:16.285+01:00
+    CardIdentifiers:
+      type: object
+      properties:
+        cardIdentifier:
+          type: string
+          description: The unique identifier used to submit the card details in the transaction registration. This identifier will represent the customer card details.
+          example: C6F92981-8C2D-457A-AA1E-16EBCD6D3AC6
+        expiry:
+          type: string
+          description: Date/Time the card identifier will expire in [ISO 8601](http://en.wikipedia.org/wiki/ISO_8601#Combined_date_and_time_representations) format
+          example: 2015-08-11T11:45:16.285+01:00
+        cardType:
+          type: string
+          description: The type of the card (Visa, MastreCard, American Express, etc.)
+          example: Visa
+    BillingAddress:
+      type: object
+      description: The `billingAddress` object is used to define the customer’s billing address details. The billing address details will also be used as shipping address details if the `shippingDetails` object is not provided for a transaction.
+      properties:
+        address1:
+          type: string
+          description: Billing address line 1, used in AVS check.
+          example: 407 St. John Street
+        address2:
+          type: string
+          description: Billing address line 2.
+        city:
+          type: string
+          description: Billing city.
+          example: London
+        postalCode:
+          type: string
+          description: Billing postal code, used in AVS check. Not required when `country` is `IE`.
+          example: EC1V 4AB
+        country:
+          type: string
+          maxLength: 2
+          minLength: 2
+          description: Two letter country code defined in [ISO 3166-1](http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2)
+          example: GB
+        state:
+          type: string
+          description: Two letter state code defined in [ISO 3166-2](http://en.wikipedia.org/wiki/ISO_3166-2:US). Required when `country` is `US`.
+      required:
+        - address1
+        - city
+        - country
+    ShippingDetails:
+      type: object
+      description: The `shippingDetails` object is used to specify the shipping address details for a transaction. If not provided the values provided in the `billingAddress` object will be used for shipping information instead.
+      properties:
+        recipientFirstName:
+          type: string
+          description: Recipient’s first names.
+          example: Sam
+        recipientLastName:
+          type: string
+          description: Recipient’s last name.
+          example: Jones
+        shippingAddress1:
+          type: string
+          description: Shipping address line 1.
+          example: 407 St. John Street
+        shippingAddress2:
+          type: string
+          description: Shipping address line 2.
+        shippingCity:
+          type: string
+          description: Shipping city.
+          example: London
+        shippingPostalCode:
+          type: string
+          description: Shipping postal code. Not required when `shippingCountry` is `IE`.
+          example: EC1V 4AB
+        shippingCountry:
+          type: string
+          description: Shipping country. Two letter country code defined in [ISO 3166-1](http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2)
+          example: GB
+        shippingState:
+          type: string
+          description: Two letter state code defined in [ISO 3166-2](http://en.wikipedia.org/wiki/ISO_3166-2:US). Required when `shippingCountry` is `US`.
+      required:
+        - recipientFirstName
+        - recipientLastName
+        - shippingAddress1
+        - shippingCity
+        - shippingCountry
+    Card:
+      type: object
+      description: The `card` object represents the credit or debit card details for this transaction.
+      properties:
+        merchantSessionKey:
+          type: string
+          description: The merchant session key used to generate the `cardIdentifier`.
+          example: 90BDF208-3C19-40AC-858B-3F4054DCD1C0
+        cardIdentifier:
+          type: string
+          description: The unique reference of the card you want to charge.
+          example: cardTokenUUID
+        reusable:
+          type: boolean
+          description: A flag to indicate the card identifier is reusable, i.e. it has been created previously.
+          default: false
+        save:
+          type: boolean
+          description: A flag to indicate that you want to save the card identifier, i.e. make it reusable.
+          default: false
+      required:
+        - merchantSessionKey
+        - cardIdentifier
+    PaymentMethodObject:
+      type: object
+      description: The `paymentMethod` object specifies the payment method for the transaction.
+      properties:
+        card:
+          $ref: '#/components/schemas/Card'
+    AmountObject:
+      type: object
+      description: The `amount` object provides information regarding the total, sale and surcharge amounts for the transaction. The `amount` is only returned in response to GET requests to the transactions resource.
+      properties:
+        totalAmount:
+          type: integer
+          example: 1000
+          description: The total amount for the transaction that includes any sale or surcharge values.
+        saleAmount:
+          type: integer
+          example: 1000
+          description: The sale amount associated with the cost of goods or services for the transaction.
+        surchargeAmount:
+          type: integer
+          example: 0
+          description: The surcharge amount added to the transaction as per the settings of the account.
+    AvsCvsCheck:
+      type: object
+      description: The `avsCvcCheck` object provides information regarding the AVS/CV2 check results.
+      properties:
+        status:
+          type: string
+          description: The overall check result status.
+          enum:
+            - AllMatched
+            - SecurityCodeMatchOnly
+            - AddressMatchOnly
+            - NoMatches
+            - NotChecked
+        address:
+          type: string
+          description: The result for address check.
+          enum:
+            - Matched
+            - NotProvided
+            - NotChecked
+            - NotMatched
+        postalCode:
+          type: string
+          description: The result for postal code check.
+          enum:
+            - Matched
+            - NotProvided
+            - NotChecked
+            - NotMatched
+        securityCode:
+          type: string
+          description: The result for security code check.
+          enum:
+            - Matched
+            - NotProvided
+            - NotChecked
+            - NotMatched
+    3DSecureObject:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - Authenticated
+            - NotChecked
+            - NotAuthenticated
+            - Error
+            - CardNotEnrolled
+            - IssuerNotEnrolled
+            - MalformedOrInvalid
+            - AttemptOnly
+            - Incomplete
+          description: >
+            The 3-D Secure status of the transaction, if applied.
+             * `Ok Transaction` - request completed successfully.
+
+             * `Authenticated` - 3-D Secure checks carried out and user authenticated correctly.
+             * `NotChecked` - 3-D Secure checks were not performed. This indicates that 3-D Secure was either switched off at the account level, or disabled at transaction registration with the `apply3DSecure` set to `Disable`.
+             * `NotAuthenticated` - 3-D Secure authentication checked, but the user failed the authentication.
+             * `Error` - Authentication could not be attempted due to data errors or service unavailability in one of the parties involved in the check.
+             * `CardNotEnrolled` - This means that the card is not in the 3-D Secure scheme.
+             * `IssuerNotEnrolled` - This means that the issuer is not part of the 3-D Secure scheme.
+             * `MalformedOrInvalid` - This means that there is a problem with creating or receiving the 3D Secure data. These should not occur on the live environment.
+             * `AttemptOnly` - This means that the cardholder attempted to authenticate themselves but the process did not complete. A liability shift may occur for non-Maestro cards, depending on your merchant agreement.
+             * `Incomplete` - This means that the 3D Secure authentication was not available (normally at the card issuer site).

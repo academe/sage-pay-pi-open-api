@@ -1,0 +1,83 @@
+tags:
+  tag:
+    name: Merchant Session Keys
+    description: |
+      The Merchant Session Keys endpoint allows you to create a `merchantSessionKey`, that you can then use to authenticate your requests.
+
+      Once the Merchant Session Keys is created, it will be used to:
+
+      - Create a card identifier (as `Authorization` bearer token)
+      - Submit a transactions registration POST.
+
+      The `merchantSessionKey` expires after 400 seconds and can only be used to create one successful card identifier. It will also expire and be removed after 3 failed attempts to create a card identifier.
+
+      **Authentication**: You will need to authenticate your call to the Merchant Session Keys endpoint using [HTTP Basic Authentication](#section/Authentication).
+
+paths:
+  create:
+    post:
+      tags:
+        - Merchant Session Keys
+      summary: Create a new Merchant Session Key
+      description: When you create a `merchantSessionKey` you must specify the Sage Pay vendor name linked to your API [authentication credentials](#section/Authentication).
+      operationId: createMsk
+      requestBody:
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                vendorName:
+                  type: string
+                  example: sandbox
+              required:
+                - vendorName
+      responses:
+        '201':
+          description: A new `merchantSessionKey` has been successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: 'components.yaml#/components/schemas/MerchantSessionKeys'
+        '403':
+          description: Authentication error.
+      x-code-samples:
+        - lang: 'cURL'
+          source: |
+            curl https://pi-test.sagepay.com/api/v1/merchant-session-keys \
+            -H "Authorization: Basic aEpZeHN3N0hMYmo0MGNCOHVkRVM4Q0RSRkxodUo4RzU0TzZyRHBVWHZFNmhZRHJyaWE6bzJpSFNyRnliWU1acG1XT1FNdWhzWFA1MlY0ZkJ0cHVTRHNocktEU1dzQlkxT2lONmh3ZDlLYjEyejRqNVVzNXU="  \
+            -H "Content-type: application/json" \
+            -X POST \
+            -d '{
+                "vendorName": "sandbox"
+            }'
+
+  retrieve:
+    get:
+      tags:
+        - Merchant Session Keys
+      summary: Validate and check expiry of a Merchant Session Key
+      description: Supply the `merchantSessionKey` and we will check its validity and return the `expiry`
+      operationId: getMsk
+      parameters:
+        - name: merchantSessionKey
+          in: path
+          description: The merchantSessionKey to check
+          required: true
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: 'components.yaml#/components/schemas/MerchantSessionKeys'
+        '400':
+          description: Invalid ID supplied
+        '404':
+          description: The `merchantSessionKey` was not found
+      x-code-samples:
+        - lang: 'cURL'
+          source: |
+            curl https://pi-test.sagepay.com/api/v1/merchant-session-keys/<merchant-session-key> \
+            -X GET

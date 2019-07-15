@@ -1,0 +1,124 @@
+tags:
+  tag:
+    name: Card Identifiers
+    description: |
+      The card identifiers endpoint allows you to represent the card details as the `cardIdentifier` that you will then use in the transaction registration.
+
+      The `cardIdentifier` expires after 400 seconds and is returned on the response along with the expiry and card type. You will need to retrieve the card identifier and use it in the next step to perform a transaction.
+
+      **Authentication**: You will need to use the `merchantSessionKey` as an access token in the Authorisation request header field.
+
+paths:
+  create:
+    post:
+      tags:
+        - Card Identifiers
+      summary: Create a new Card Identifier
+      description: |
+        You need to have a valid `merchantSessionKey` before you can create a `cardIdentifier`.
+        
+        The merchant session key expires after 400 seconds, after which is no longer be valid. It’s also one time use, which means you’ll need to generate a new `merchantSessionKey` for every `cardIdentifier`.
+
+        The merchant session key will allow 3 failed attempts to generate a card identifier before it’s removed.
+      operationId: createCi
+      security:
+        - 'Bearer Authentication': [merchantSessionKey]
+      requestBody:
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cardholderName:
+                  type: string
+                  description: The name of the card holder
+                  example: Bob The Builder
+                cardNumber:
+                  type: string
+                  description: The number of the card
+                  example: '4929000000006'
+                expiryDate:
+                  type: string
+                  description: The expiry date of the card in `MMYY` format
+                  example: '0223'
+                securityCode:
+                  type: string
+                  description: The card security code, also known as CV2, CVV, or CVC. This is used in CV2 checks.
+                  example: '123'
+              required:
+                - cardholderName
+                - cardNumber
+                - expiryDate
+      responses:
+        '201':
+          description: A new `cardIdentifier` has been successfully created.
+          content:
+            application/json:
+              schema:
+                $ref: 'components.yaml#/components/schemas/CardIdentifiers'
+        '403':
+          description: Authentication error.
+      x-code-samples:
+        - lang: 'cURL'
+          source: |
+            curl https://pi-test.sagepay.com/api/v1/card-identifiers \
+            -H "Authorization: Bearer <merchant-session-key>"  \
+            -H "Content-type: application/json" \
+            -X POST \
+            -d '{ \
+              "cardDetails":{
+                "cardholderName": "BOB THE BUILDER",
+                "cardNumber": "4929000000006",
+                "expiryDate": "0320",
+                "securityCode": "123"
+              }
+            }'
+  link:
+    post:
+      tags:
+        - Card Identifiers
+      summary: Link a Card Identifier
+      description: |
+
+        ### Link a reusable card identifier with a security code
+
+        If you are using a reusable card identifier and require a security code check, you will need to link the reusable card identifier with the security code.
+      operationId: linkCi
+      security:
+        - 'Bearer Authentication': [merchantSessionKey]
+      parameters:
+        - in: path
+          name: cardIdentifier
+          required: true
+          schema:
+            type: string
+            description: The reusable card identifier
+      requestBody:
+        description: Request payload
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                securityCode:
+                  type: string
+                  description: The card security code, also known as CV2, CVV or CVC, this is used in CV2 checks.
+                  example: 123
+              required:
+                - securityCode
+      responses:
+        '204':
+          description: The `cardIdentifier` has been successfully linked to the security code.
+        '403':
+          description: Authentication error.
+      x-code-samples:
+        - lang: 'cURL'
+          source: |
+            curl https://pi-test.sagepay.com/api/v1/card-identifiers/<cardIdentifier>/security-code \
+            -H "Authorization: Bearer <merchant-session-key>"  \
+            -H "Content-type: application/json" \
+            -X POST \
+            -d '{
+            "securityCode": "123"
+            }'
